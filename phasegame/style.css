@@ -1,0 +1,26 @@
+body {
+    color: #000000;
+    font-family: Verdana,arial,Helvetica,sans-serif;
+}
+
+#game_div {
+      width: 800px;
+      margin: auto;
+      margin-top: 50px;
+}
+
+canvas {
+  background-color: #FFDE73;
+}
+
+.wrapper {
+  width: 50%;
+  margin: auto;
+  text-align: center;
+  border: 32px solid;
+  border-image: url("https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/apple.png") 32 32 round;
+}
+
+
+
+
