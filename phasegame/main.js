@@ -1,422 +1,650 @@
-Player = function (game) {
-	this.game = game;
-	this.sprite = null;
-	this.jump = -1001;
-	this.maxVelocity = 500;
-	this.shootRight = true;
-	this.cursors = null;
-};
+/*
+Copyright (c) 2013 Suffick at Codepen (http://codepen.io/suffick), GitHub (https://github.com/suffick) and lonely-pixel.com
 
-Player.prototype.preload = function() {
-	this.game.load.spritesheet('dude','https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/big-apple.png',55,55);
-};
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Player.prototype.create = function() {
-	this.sprite = game.add.sprite(100, 200, 'dude');
-	this.game.physics.enable(this.sprite, Phaser.Physics.ARCADE);
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
 
-	this.sprite.body.bounce.setTo(0, 0.2);
-	this.sprite.body.maxVelocity.y = this.maxVelocity;
-	this.sprite.body.collideWorldBounds = true;
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 
-	this.sprite.frame = 1;
-	this.cursors = this.game.input.keyboard.createCursorKeys();
-};
+/* Customisable map data */
 
-Player.prototype.update = function() {
-		if (this.cursors.left.isDown) {
-			if (this.sprite.body.touching.down) {
-				this.sprite.body.velocity.x -= 25;
-			} else {
-				this.sprite.body.velocity.x = -200;
-			}
+var map = {
 
-			this.sprite.frame = 0;
-			this.shootRight = false;
-		
-		} else if (this.cursors.right.isDown) {
+    tile_size: 16,
 
-			if (this.sprite.body.touching.down) {
-				this.sprite.body.velocity.x += 25;
-			} else {
-				this.sprite.body.velocity.x = 200;
-			}
-
-			this.sprite.frame = 1;
-			this.shootRight = true;
-		} else {
-			if (this.sprite.body.velocity.x > 0) {
-				this.sprite.body.velocity.x -= 50;
-			} else if (this.sprite.body.velocity.x < 0 ) {
-				this.sprite.body.velocity.x += 50;
-			} else {
-				this.sprite.body.velocity.x = 0;
-			}
-
-
-			this.sprite.frame = this.shootRight ?  1 :  0;
-		}
-
-		if (this.cursors.up.isDown && this.sprite.body.touching.down) {
-			this.sprite.body.velocity.y = this.jump;
-		}
-};
-
-Level = function (game) {
-	this.game = game;
-	this.platforms = null;
-	this.ground = null;
-	this.ledge1 = null;
-	this.ledge2 = null;
-	this.ledge3 = null;
-};
-
-Level.prototype.preload = function() {
-	this.game.load.image('ground','https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/platform800.png');
-	this.game.load.image('ledge','https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/platform.png');
-};
-
-Level.prototype.create = function() {
-	this.platforms = game.add.group();
-	this.platforms.enableBody = true;
-	this.platforms.physicsBodyType = Phaser.Physics.ARCADE;
-
-	this.ground = this.platforms.create(0, game.world.height - 64, 'ground');
-	this.ledge1 = this.platforms.create(400, 290, 'ledge');
-	this.ledge2 = this.platforms.create(-150,200,'ledge');
-	this.ledge3 = this.platforms.create(400,100,'ledge');
-		
-	this.ground.body.immovable = true;
-	this.ground.body.allowGravity = false;
-
-	this.ledge1.body.immovable = true;
-	this.ledge1.body.allowGravity = false;
-
-	this.ledge2.body.immovable = true;
-	this.ledge2.body.allowGravity = false;
-
-	this.ledge3.body.immovable = true;
-	this.ledge3.body.allowGravity = false;
-};
-
-HUD = function (game) {
-	this.game = game;
-	this.scoreText = null;
-	this.gameText = null;
-
-	this.style = {
-		font: "15px Arial",
-		fill: "#0069b0"
-	};
-
-	this.bigStyle = {
-		font: "30px Arial",
-		fill: "#0069b0",
-		align: "center"
-	};
-};
-
-HUD.prototype.create = function() {
-	this.scoreText = game.add.text(20,20,'Score: ' + main_state.score, this.style);
-	this.gameText = game.add.text(game.world.width/2,game.world.height/2, main_state.message, this.bigStyle);
-};
-
-HUD.prototype.update = function() {
-	this.scoreText.setText('Score: ' + main_state.score);
-	this.gameText.setText(main_state.message);
-	this.gameText.position.x = game.world.width/2 - this.gameText.width/2;
-	this.gameText.position.y = 210;
-};
-
-Bullets = function (game, player) {
-	this.game = game;
-	this.player = player;
-	this.fire = false;
-	this.bulletGroup = null;
-	this.bulletTime = 0;
-	this.shotDelayTime = 0;
-	this.shotDelay = 200;
-};
-
-Bullets.prototype.preload = function() {
-	this.game.load.image('bullet', 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/bullet-gun.png');
-};
-
-Bullets.prototype.create = function() {
-		this.bulletGroup = game.add.group();
-		this.bulletGroup.enableBody = true;
-		this.bulletGroup.physicsBodyType = Phaser.Physics.ARCADE;
-		this.bulletGroup.createMultiple(30, 'bullet');
-
-		for (var i = 0; i < 30; i++) {
-			var b = this.bulletGroup.create(this.player.x, this.player.y, 'bullet');
-			b.name = 'bullet' + i;
-			b.exists = false;
-			b.visible = false;
-			b.checkWorldBounds = true;
-		}
-
-		this.bulletGroup.callAll('events.onOutOfBounds.add', 'events.onOutOfBounds', this.resetBullet, this);
-};
-
-Bullets.prototype.update = function() {
-	if (game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR) && this.player.sprite.alive) {
-			this.fireBullet();
-			this.fire = true;
-		} else {
-			this.fire = false;
-		}
-};
-
-Bullets.prototype.fireBullet = function () {
-	if (game.time.now > this.bulletTime) {
-		var bullet = this.bulletGroup.getFirstExists(false);
-
-		if (bullet) {
-			bullet.reset((this.player.shootRight ? this.player.sprite.x+40 : this.player.sprite.x), this.player.sprite.y+28);
-			bullet.body.velocity.x = this.player.shootRight ? 600 : -600;
-			bullet.body.allowGravity = false;
-			this.bulletTime = game.time.now + 100;
-		}
-	}
-};
-
-Bullets.prototype.resetBullet = function (bullet) {
-	bullet.kill();
-};
-
-Bullets.prototype.bulletCollides = function (targetA, targetB) {
-	main_state.score++;
-
-	targetA.kill();
-	targetB.kill();
-};
-
-Apples = function (game,player) {
-	this.game = game;
-	this.player = player;
-	this.sprites = null;
-	this.totalApples = 10;
-};
-
-Apples.prototype.preload = function() {
-	this.game.load.spritesheet('apple','https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/apple.png',32,32);
-};
-
-Apples.prototype.create = function() {
-	this.sprites = game.add.group();
-	this.sprites.enableBody = true;
-	this.sprites.physicsBodyType = Phaser.Physics.ARCADE;
-
-	for (var k = 0; k < this.totalApples; k++) {
-		var apple = this.sprites.create(k * 80, 0, 'apple');
-		apple.body.bounce.y = 0.7 + (Math.random() * 0.2);
-	}
-
-};
-
-Apples.prototype.collectApple = function (targetA, targetB) {
-	main_state.score += 10;
-
-	targetB.kill();
-};
-
-Robots = function (game) {
-	this.game = game;
-	this.robotGroup1 = null;
-	this.robotGroup2 = null;
-	this.robotSpawnDelay = 1000;
-	this.robotDelayTime1 = 0;
-	this.robotDelayTime2 = 0;
-};
-
-Robots.prototype.preload = function() {
-	this.game.load.spritesheet('baddie','https://s3-us-west-2.amazonaws.com/s.cdpn.io/9353/wheely-baddy.png',32,32);
-};
-
-Robots.prototype.create = function() {
-	this.robotGroup1 = game.add.group();
-	this.robotGroup1.enableBody = true;
-	this.robotGroup1.physicsBodyType = Phaser.Physics.ARCADE;
-	
-	this.robotGroup2 = game.add.group();
-	this.robotGroup2.enableBody = true;
-	this.robotGroup2.physicsBodyType = Phaser.Physics.ARCADE;
-
-	for (var j = 0; j < 4; j++) {
-		var sprite1 = this.robotGroup1.create(game.world.width + (j*40), 10, 'baddie');
-		sprite1.name = 'baddie' + j;
-		sprite1.body.velocity.x = -100;
-		sprite1.checkWorldBounds = true;
-		sprite1.outOfBoundsKill = true;
-		
-		var sprite2 = this.robotGroup2.create(-(j*40), 10, 'baddie');
-		sprite2.name = 'baddie' + j;
-		sprite2.body.velocity.x = 100;
-		sprite2.checkWorldBounds = true;
-		sprite2.outOfBoundsKill = true;
-	}
-
-	this.robotGroup1.callAll('animations.add', 'animations', 'walk', [0,1], 10, true);
-
-	this.robotGroup1.callAll('play', null, 'walk'); 
-	
-	this.robotGroup2.callAll('animations.add', 'animations', 'walk2', [2,3], 10, true);
-
-	this.robotGroup2.callAll('play', null, 'walk2'); 
-	
-};
-
-Robots.prototype.update = function() {
-	if (game.time.now > this.robotDelayTime1) {
-		var robot1 = this.robotGroup1.getFirstDead();
-
-		if (robot1) {
-			robot1.reset(game.world.width-40, 10);
-			robot1.body.velocity.x = -100;
-			this.robotDelayTime1 = game.time.now + 2500;
-		}
-	}
-
-	if (game.time.now > this.robotDelayTime2) {
-		var robot2 = this.robotGroup2.getFirstDead();
-
-		if (robot2) {
-			robot2.reset(10, 10);
-			robot2.body.velocity.x = 100;
-			this.robotDelayTime2 = game.time.now + 2500;
-		}
-	}
-};
-
-Robots.prototype.robotKillsPlayer = function (targetA,targetB) {
-	main_state.message = 'GAME OVER!!!! \nClick the screen to play again';
-	targetA.kill();
-};
-
-var game = new Phaser.Game(800, 480, Phaser.AUTO, 'game_div');
-
-/*	Creates a new 'main' state that will contain the game */
-var main_state = {
-
-	score: 0,
-	message: '',
-	gravity: 1000,
-	player: null,
-	level: null,
-	bullets: null,
-	apples: null,
-	hud: null,
-	robots: null,
-
-	preload: function() { 
-    // this is neccessary so that can load images as codepen assets cross domain.
-    this.game.load.crossOrigin = true;
-		// Change the background color of the game
-	  this.game.stage.backgroundColor = '#FFDE73';
+    /*
     
-		
-		/*	Function called first to load all the assets */
-		this.player = new Player(game);
-		this.player.preload();
+    Key vairables:
+    
+    id       [required] - an integer that corresponds with a tile in the data array.
+    colour   [required] - any javascript compatible colour variable.
+    solid    [optional] - whether the tile is solid or not, defaults to false.
+    bounce   [optional] - how much velocity is preserved upon hitting the tile, 0.5 is half.
+    jump     [optional] - whether the player can jump while over the tile, defaults to false.
+    friction [optional] - friction of the tile, must have X and Y values (e.g {x:0.5, y:0.5}).
+    gravity  [optional] - gravity of the tile, must have X and Y values (e.g {x:0.5, y:0.5}).
+    fore     [optional] - whether the tile is drawn in front of the player, defaults to false.
+    script   [optional] - refers to a script in the scripts section, executed if it is touched.
+    
+    */
+    
+    keys: [
+        {id: 0, colour: '#333', solid: 0},
+        {id: 1, colour: '#888', solid: 0},
+        {id: 2,colour: '#555',solid: 1,bounce: 0.35},
+        {id: 3,colour: 'rgba(121, 220, 242, 0.4)',friction: {x: 0.9,y: 0.9},gravity: {x: 0,y: 0.1},jump: 1,fore: 1},
+        {id: 4,colour: '#777',jump: 1},
+        {id: 5,colour: '#E373FA',solid: 1,bounce: 1.1},
+        {id: 6,colour: '#666',solid: 1,bounce: 0},
+        {id: 7,colour: '#73C6FA',solid: 0,script: 'change_colour'},
+        {id: 8,colour: '#FADF73',solid: 0,script: 'next_level'},
+        {id: 9,colour: '#C93232',solid: 0,script: 'death'},
+        {id: 10,colour: '#555',solid: 1},
+        {id: 11,colour: '#0FF',solid: 0,script: 'unlock'}
+    ],
 
-		this.level = new Level(game);
-		this.level.preload();
+    /* An array representing the map tiles. Each number corresponds to a key */
+    data: [
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 6, 6, 6, 6, 6, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 7, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 4, 2, 2, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2, 2, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 1, 2],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 2, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2],
+        [2, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2],
+        [2, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2],
+        [2, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 8, 1, 1, 1, 2],
+        [2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2],
+        [2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 9, 9, 9, 2, 10, 10, 10, 10, 10, 10, 1, 1, 1, 1, 1, 1, 1, 11, 2, 2, 2, 2, 4, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2, 2, 2, 2, 2, 2, 2, 2],
+        [2, 6, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 2, 1, 1, 1, 1, 1, 1, 2],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2],
+        [2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 6, 6, 6, 2, 2, 2, 2, 2, 2, 6, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+        [2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 2, 5, 5, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2],
+        [2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 5, 5, 1, 1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2],
+        [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+    ],
 
-		this.bullets = new Bullets(game,this.player);
-		this.bullets.preload();
+    /* Default gravity of the map */
+    
+    gravity: {
+        x: 0,
+        y: 0.3
+    },
+    
+    /* Velocity limits */
 
-		this.apples = new Apples(game,this.player);
-		this.apples.preload();
+    vel_limit: {
+        x: 2,
+        y: 16
+    },
 
-		this.hud = new HUD(game);
+    /* Movement speed when the key is pressed */
+    
+    movement_speed: {
+        jump: 6,
+        left: 0.3,
+        right: 0.3
+    },
+    
+    /* The coordinates at which the player spawns and the colour of the player */
 
-		this.robots = new Robots(game);
-		this.robots.preload();
-	},
+    player: {
+        x: 2,
+        y: 2,
+        colour: '#FF9900'
+    },
+    
+    /* scripts refered to by the "script" variable in the tile keys */
 
-	create: function() { 
-		/*	Fuction called after 'preload' to setup the game */
-
-		game.physics.startSystem(Phaser.Physics.ARCADE);
-		game.physics.arcade.gravity.y = this.gravity;
-
-		this.player.create();
-
-		this.level.create();
-
-		this.bullets.create();
-
-		this.apples.create();
-
-		this.robots.create();
-
-		this.hud.create();
-	
-		/* Stop the following keys from propagating up to the browser */
-		game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.SPACEBAR ]);
-
-		game.input.onDown.add(this.newGame, this);
-	},
-	
-	update: function() {
-		/*	Function called 60 times per second */
-				
-		game.physics.arcade.collide(	this.player.sprite, 
-										[this.robots.robotGroup1, this.robots.robotGroup2], 
-										this.robots.robotKillsPlayer, 
-										null, 
-										this
-									);
-
-		game.physics.arcade.overlap(	this.player.sprite,
-										this.apples.sprites,
-										this.apples.collectApple,
-										null,
-										this
-									);
-
-
-		game.physics.arcade.collide(	this.level.platforms, 
-										[this.player.sprite, this.apples.sprites, this.robots.robotGroup1, this.robots.robotGroup2]
-									);
-
-		game.physics.arcade.collide(	this.bullets.bulletGroup, 
-										[this.robots.robotGroup1, this.robots.robotGroup2], 
-										this.bullets.bulletCollides, 
-										null, 
-										this
-									);
-
-		if (this.apples.sprites.countDead() == this.apples.totalApples) {
-			this.message = 'YOU WIN!!!\nClick the screen to play again';
-			this.player.sprite.kill();
-			this.robots.robotGroup1.removeAll();
-			this.robots.robotGroup2.removeAll();
-		}
-
-		this.player.update();
-
-		this.bullets.update();
-
-		this.robots.update();
-
-		this.hud.update();
-
-	},
-
-	newGame: function() {
-		if (!this.player.sprite.alive) {
-			this.score = 0;
-			this.message = '';
-			this.game.state.start('main');
-		}
-	}
-
+    scripts: {
+        /* you can just use "this" instead of your engine variable ("game"), but Codepen doesn't like it */
+        change_colour: 'game.player.colour = "#"+(Math.random()*0xFFFFFF<<0).toString(16);',
+        /* you could load a new map variable here */
+        next_level: 'alert("Yay! You won! Reloading map.");game.load_map(map);',
+        death: 'alert("You died!");game.load_map(map);',
+        unlock: 'game.current_map.keys[10].solid = 0;game.current_map.keys[10].colour = "#888";'
+    }
 };
 
-/*	Add and start the 'main' state to start the game */
-game.state.add('main', main_state);  
-game.state.start('main');
+/* Clarity engine */
+
+var Clarity = function () {
+
+    this.alert_errors   = false;
+    this.log_info       = true;
+    this.tile_size      = 16;
+    this.limit_viewport = false;
+    this.jump_switch    = 0;
+    
+    this.viewport = {
+        x: 200,
+        y: 200
+    };
+    
+    this.camera = {
+        x: 0,
+        y: 0
+    };
+    
+    this.key = {
+        left: false,
+        right: false,
+        up: false
+    };
+
+    this.player = {
+
+        loc: {
+            x: 0,
+            y: 0
+        },
+        
+        vel: {
+            x: 0,
+            y: 0
+        },
+        
+        can_jump: true
+    };
+
+    window.onkeydown = this.keydown.bind(this);
+    window.onkeyup   = this.keyup.bind(this);
+};
+
+Clarity.prototype.error = function (message) {
+
+    if (this.alert_errors) alert(message);
+    if (this.log_info) console.log(message);
+};
+
+Clarity.prototype.log = function (message) {
+
+    if (this.log_info) console.log(message);
+};
+
+Clarity.prototype.set_viewport = function (x, y) {
+
+    this.viewport.x = x;
+    this.viewport.y = y;
+};
+
+Clarity.prototype.keydown = function (e) {
+
+    var _this = this;
+
+    switch (e.keyCode) {
+    case 37:
+        _this.key.left = true;
+        break;
+    case 38:
+        _this.key.up = true;
+        break;
+    case 39:
+        _this.key.right = true;
+        break;
+    }
+};
+
+Clarity.prototype.keyup = function (e) {
+
+    var _this = this;
+
+    switch (e.keyCode) {
+    case 37:
+        _this.key.left = false;
+        break;
+    case 38:
+        _this.key.up = false;
+        break;
+    case 39:
+        _this.key.right = false;
+        break;
+    }
+};
+
+Clarity.prototype.load_map = function (map) {
+
+    if (typeof map      === 'undefined'
+     || typeof map.data === 'undefined'
+     || typeof map.keys === 'undefined') {
+
+        this.error('Error: Invalid map data!');
+
+        return false;
+    }
+
+    this.current_map = map;
+
+    this.current_map.background = map.background || '#333';
+    this.current_map.gravity = map.gravity || {x: 0, y: 0.3};
+    this.tile_size = map.tile_size || 16;
+
+    var _this = this;
+    
+    this.current_map.width = 0;
+    this.current_map.height = 0;
+
+    map.keys.forEach(function (key) {
+
+        map.data.forEach(function (row, y) {
+            
+            _this.current_map.height = Math.max(_this.current_map.height, y);
+
+            row.forEach(function (tile, x) {
+                
+                _this.current_map.width = Math.max(_this.current_map.width, x);
+
+                if (tile == key.id)
+                    _this.current_map.data[y][x] = key;
+            });
+        });
+    });
+    
+    this.current_map.width_p = this.current_map.width * this.tile_size;
+    this.current_map.height_p = this.current_map.height * this.tile_size;
+
+    this.player.loc.x = map.player.x * this.tile_size || 0;
+    this.player.loc.y = map.player.y * this.tile_size || 0;
+    this.player.colour = map.player.colour || '#000';
+  
+    this.key.left  = false;
+    this.key.up    = false;
+    this.key.right = false;
+    
+    this.camera = {
+        x: 0,
+        y: 0
+    };
+    
+    this.player.vel = {
+        x: 0,
+        y: 0
+    };
+
+    this.log('Successfully loaded map data.');
+
+    return true;
+};
+
+Clarity.prototype.get_tile = function (x, y) {
+
+    return (this.current_map.data[y] && this.current_map.data[y][x]) ? this.current_map.data[y][x] : 0;
+};
+
+Clarity.prototype.draw_tile = function (x, y, tile, context) {
+
+    if (!tile || !tile.colour) return;
+
+    context.fillStyle = tile.colour;
+    context.fillRect(
+        x,
+        y,
+        this.tile_size,
+        this.tile_size
+    );
+};
+
+Clarity.prototype.draw_map = function (context, fore) {
+
+    for (var y = 0; y < this.current_map.data.length; y++) {
+
+        for (var x = 0; x < this.current_map.data[y].length; x++) {
+
+            if ((!fore && !this.current_map.data[y][x].fore) || (fore && this.current_map.data[y][x].fore)) {
+
+                var t_x = (x * this.tile_size) - this.camera.x;
+                var t_y = (y * this.tile_size) - this.camera.y;
+                
+                if(t_x < -this.tile_size
+                || t_y < -this.tile_size
+                || t_x > this.viewport.x
+                || t_y > this.viewport.y) continue;
+                
+                this.draw_tile(
+                    t_x,
+                    t_y,
+                    this.current_map.data[y][x],
+                    context
+                );
+            }
+        }
+    }
+
+    if (!fore) this.draw_map(context, true);
+};
+
+Clarity.prototype.move_player = function () {
+
+    var tX = this.player.loc.x + this.player.vel.x;
+    var tY = this.player.loc.y + this.player.vel.y;
+
+    var offset = Math.round((this.tile_size / 2) - 1);
+
+    var tile = this.get_tile(
+        Math.round(this.player.loc.x / this.tile_size),
+        Math.round(this.player.loc.y / this.tile_size)
+    );
+     
+    if(tile.gravity) {
+        
+        this.player.vel.x += tile.gravity.x;
+        this.player.vel.y += tile.gravity.y;
+        
+    } else {
+        
+        this.player.vel.x += this.current_map.gravity.x;
+        this.player.vel.y += this.current_map.gravity.y;
+    }
+    
+    if (tile.friction) {
+
+        this.player.vel.x *= tile.friction.x;
+        this.player.vel.y *= tile.friction.y;
+    }
+
+    var t_y_up   = Math.floor(tY / this.tile_size);
+    var t_y_down = Math.ceil(tY / this.tile_size);
+    var y_near1  = Math.round((this.player.loc.y - offset) / this.tile_size);
+    var y_near2  = Math.round((this.player.loc.y + offset) / this.tile_size);
+
+    var t_x_left  = Math.floor(tX / this.tile_size);
+    var t_x_right = Math.ceil(tX / this.tile_size);
+    var x_near1   = Math.round((this.player.loc.x - offset) / this.tile_size);
+    var x_near2   = Math.round((this.player.loc.x + offset) / this.tile_size);
+
+    var top1    = this.get_tile(x_near1, t_y_up);
+    var top2    = this.get_tile(x_near2, t_y_up);
+    var bottom1 = this.get_tile(x_near1, t_y_down);
+    var bottom2 = this.get_tile(x_near2, t_y_down);
+    var left1   = this.get_tile(t_x_left, y_near1);
+    var left2   = this.get_tile(t_x_left, y_near2);
+    var right1  = this.get_tile(t_x_right, y_near1);
+    var right2  = this.get_tile(t_x_right, y_near2);
 
 
+    if (tile.jump && this.jump_switch > 15) {
+
+        this.player.can_jump = true;
+        
+        this.jump_switch = 0;
+        
+    } else this.jump_switch++;
+    
+    this.player.vel.x = Math.min(Math.max(this.player.vel.x, -this.current_map.vel_limit.x), this.current_map.vel_limit.x);
+    this.player.vel.y = Math.min(Math.max(this.player.vel.y, -this.current_map.vel_limit.y), this.current_map.vel_limit.y);
+    
+    this.player.loc.x += this.player.vel.x;
+    this.player.loc.y += this.player.vel.y;
+    
+    this.player.vel.x *= .9;
+    
+    if (left1.solid || left2.solid || right1.solid || right2.solid) {
+
+        /* fix overlap */
+
+        while (this.get_tile(Math.floor(this.player.loc.x / this.tile_size), y_near1).solid
+            || this.get_tile(Math.floor(this.player.loc.x / this.tile_size), y_near2).solid)
+            this.player.loc.x += 0.1;
+
+        while (this.get_tile(Math.ceil(this.player.loc.x / this.tile_size), y_near1).solid
+            || this.get_tile(Math.ceil(this.player.loc.x / this.tile_size), y_near2).solid)
+            this.player.loc.x -= 0.1;
+
+        /* tile bounce */
+
+        var bounce = 0;
+
+        if (left1.solid && left1.bounce > bounce) bounce = left1.bounce;
+        if (left2.solid && left2.bounce > bounce) bounce = left2.bounce;
+        if (right1.solid && right1.bounce > bounce) bounce = right1.bounce;
+        if (right2.solid && right2.bounce > bounce) bounce = right2.bounce;
+
+        this.player.vel.x *= -bounce || 0;
+        
+    }
+    
+    if (top1.solid || top2.solid || bottom1.solid || bottom2.solid) {
+
+        /* fix overlap */
+        
+        while (this.get_tile(x_near1, Math.floor(this.player.loc.y / this.tile_size)).solid
+            || this.get_tile(x_near2, Math.floor(this.player.loc.y / this.tile_size)).solid)
+            this.player.loc.y += 0.1;
+
+        while (this.get_tile(x_near1, Math.ceil(this.player.loc.y / this.tile_size)).solid
+            || this.get_tile(x_near2, Math.ceil(this.player.loc.y / this.tile_size)).solid)
+            this.player.loc.y -= 0.1;
+
+        /* tile bounce */
+        
+        var bounce = 0;
+        
+        if (top1.solid && top1.bounce > bounce) bounce = top1.bounce;
+        if (top2.solid && top2.bounce > bounce) bounce = top2.bounce;
+        if (bottom1.solid && bottom1.bounce > bounce) bounce = bottom1.bounce;
+        if (bottom2.solid && bottom2.bounce > bounce) bounce = bottom2.bounce;
+        
+        this.player.vel.y *= -bounce || 0;
+
+        if ((bottom1.solid || bottom2.solid) && !tile.jump) {
+            
+            this.player.on_floor = true;
+            this.player.can_jump = true;
+        }
+        
+    }
+    
+    // adjust camera
+
+    var c_x = Math.round(this.player.loc.x - this.viewport.x/2);
+    var c_y = Math.round(this.player.loc.y - this.viewport.y/2);
+    var x_dif = Math.abs(c_x - this.camera.x);
+    var y_dif = Math.abs(c_y - this.camera.y);
+    
+    if(x_dif > 5) {
+        
+        var mag = Math.round(Math.max(1, x_dif * 0.1));
+    
+        if(c_x != this.camera.x) {
+            
+            this.camera.x += c_x > this.camera.x ? mag : -mag;
+            
+            if(this.limit_viewport) {
+                
+                this.camera.x = 
+                    Math.min(
+                        this.current_map.width_p - this.viewport.x + this.tile_size,
+                        this.camera.x
+                    );
+                
+                this.camera.x = 
+                    Math.max(
+                        0,
+                        this.camera.x
+                    );
+            }
+        }
+    }
+    
+    if(y_dif > 5) {
+        
+        var mag = Math.round(Math.max(1, y_dif * 0.1));
+        
+        if(c_y != this.camera.y) {
+            
+            this.camera.y += c_y > this.camera.y ? mag : -mag;
+        
+            if(this.limit_viewport) {
+                
+                this.camera.y = 
+                    Math.min(
+                        this.current_map.height_p - this.viewport.y + this.tile_size,
+                        this.camera.y
+                    );
+                
+                this.camera.y = 
+                    Math.max(
+                        0,
+                        this.camera.y
+                    );
+            }
+        }
+    }
+    
+    if(this.last_tile != tile.id && tile.script) {
+    
+        eval(this.current_map.scripts[tile.script]);
+    }
+    
+    this.last_tile = tile.id;
+};
+
+Clarity.prototype.update_player = function () {
+
+    if (this.key.left) {
+
+        if (this.player.vel.x > -this.current_map.vel_limit.x)
+            this.player.vel.x -= this.current_map.movement_speed.left;
+    }
+
+    if (this.key.up) {
+
+        if (this.player.can_jump && this.player.vel.y > -this.current_map.vel_limit.y) {
+            
+            this.player.vel.y -= this.current_map.movement_speed.jump;
+            this.player.can_jump = false;
+        }
+    }
+
+    if (this.key.right) {
+
+        if (this.player.vel.x < this.current_map.vel_limit.x)
+            this.player.vel.x += this.current_map.movement_speed.left;
+    }
+
+    this.move_player();
+};
+
+Clarity.prototype.draw_player = function (context) {
+
+    context.fillStyle = this.player.colour;
+
+    context.beginPath();
+
+    context.arc(
+        this.player.loc.x + this.tile_size / 2 - this.camera.x,
+        this.player.loc.y + this.tile_size / 2 - this.camera.y,
+        this.tile_size / 2 - 1,
+        0,
+        Math.PI * 2
+    );
+
+    context.fill();
+};
+
+Clarity.prototype.update = function () {
+
+    this.update_player();
+};
+
+Clarity.prototype.draw = function (context) {
+
+    this.draw_map(context, false);
+    this.draw_player(context);
+};
+
+/* Setup of the engine */
+
+window.requestAnimFrame =
+  window.requestAnimationFrame ||
+  window.webkitRequestAnimationFrame ||
+  window.mozRequestAnimationFrame ||
+  window.oRequestAnimationFrame ||
+  window.msRequestAnimationFrame ||
+  function(callback) {
+    return window.setTimeout(callback, 1000 / 60);
+  };
+
+var canvas = document.getElementById('canvas'),
+    ctx = canvas.getContext('2d');
+
+canvas.width = 400;
+canvas.height = 400;
+
+var game = new Clarity();
+    game.set_viewport(canvas.width, canvas.height);
+    game.load_map(map);
+
+    /* Limit the viewport to the confines of the map */
+    game.limit_viewport = true;
+
+var Loop = function() {
+  
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  game.update();
+  game.draw(ctx);
+  
+  window.requestAnimFrame(Loop);
+};
+
+Loop();
